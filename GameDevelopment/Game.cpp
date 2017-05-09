@@ -9,6 +9,9 @@
 #include <WICTextureLoader.h>
 #include <DDSTextureLoader.h>
 #include <CommonStates.h>
+#include "ADX2Le.h"
+#include "Resources\Music\Basic.h"
+#include "Resources\Music\CueSheet_0.h"
 
 extern void ExitGame();
 
@@ -22,6 +25,12 @@ Game::Game() :
     m_outputHeight(600),
     m_featureLevel(D3D_FEATURE_LEVEL_9_1)
 {
+}
+
+Game::~Game()
+{
+	//	サウンドライブラリの終了処理
+	ADX2Le::Finalize();
 }
 
 // Initialize the Direct3D resources required to run.
@@ -72,6 +81,21 @@ void Game::Initialize(HWND window, int width, int height)
 	//	表示座標を画面の中央に指定
 	m_screenPos.x = m_outputWidth / 2.f;
 	m_screenPos.y = m_outputHeight / 2.f;
+
+	//	キーボードのオブジェクトを生成
+	m_keyboard = std::make_unique<Keyboard>();
+
+	//	マウスのオブジェクトを生成
+	m_mouse = std::make_unique<Mouse>();
+	//	ウィンドウハンドラを通知
+	m_mouse->SetWindow(window);
+
+	//	ACFファイルの読み込み
+	ADX2Le::Initialize("Resources/Music/NewProject.acf");
+	//	ACBとAWBを読み込む
+	ADX2Le::LoadAcb("Resources/Music/CueSheet_0.acb", "Resources/Music/CueSheet_0.awb");
+
+	ADX2Le::Play(CRI_CUESHEET_0_HARUNOYOKAN);
 }
 
 // Executes the basic game loop.
@@ -88,10 +112,13 @@ void Game::Tick()
 // Updates the world.
 void Game::Update(DX::StepTimer const& timer)
 {
-    float elapsedTime = float(timer.GetElapsedSeconds());
+	//	サウンドライブラリの毎フレーム更新
+	ADX2Le::Update();
+	
+	float elapsedTime = float(timer.GetElapsedSeconds());
 
-    // TODO: Add your game logic here.
-    elapsedTime;
+	// TODO: Add your game logic here.
+	elapsedTime;
 
 	//	カウンタを進める
 	m_count++;
@@ -103,6 +130,63 @@ void Game::Update(DX::StepTimer const& timer)
 	ss << L"aiueo" << m_count << L"kakiku";
 	//	ストリングストリームから文字列を取得
 	m_str = ss.str();
+
+	//	キーボードの状態を取得
+	Keyboard::State kb = m_keyboard->GetState();
+	//	キーボードトラッカーの更新
+	m_keyboardtracker.Update(kb);
+
+	////	バックスペースのキー判定
+	//if (kb.Back)
+	//{
+	//	// Backspace key is down
+	//	m_str = L"BackSpace!";
+	//}
+
+	////	スペースキーのトリガー判定
+	//else if (m_keyboardtracker.pressed.Enter)
+	//{
+	//	// Space was just pressed down
+	//	m_str = L"Enter!";
+	//}
+	////	スペースキーのキー判定
+	//else if (m_keyboardtracker.released.Space)
+	//{
+	//	//	スペースキーが離されたとき
+	//	m_str = L"Space!";
+	//}
+	////	押されていないときは何も表示しない
+	//else
+	//{
+	//	m_str = L"";
+	//}
+
+	//	マウスの状態を取得
+	Mouse::State state = m_mouse->GetState();
+	m_tracker.Update(state);
+
+	if ( m_tracker.rightButton == Mouse::ButtonStateTracker::HELD )
+	{
+		// Left button is down
+		m_str = L"Trigger";
+	}
+	else
+	{
+		m_str = L"";
+	}
+
+	SimpleMath::Vector2 mousePosInPixels(float(state.x), float(state.y));
+
+	m_screenPos = mousePosInPixels;
+
+	if (m_tracker.leftButton == Mouse::ButtonStateTracker::ButtonState::PRESSED)
+	{
+		m_mouse->SetMode(Mouse::MODE_RELATIVE);
+	}
+	else if (m_tracker.leftButton == Mouse::ButtonStateTracker::ButtonState::RELEASED)
+	{
+		m_mouse->SetMode(Mouse::MODE_ABSOLUTE);
+	}
 }
 
 // Draws the scene.

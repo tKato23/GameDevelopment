@@ -8,6 +8,8 @@
 #include <SpriteFont.h>
 #include "StepTimer.h"
 #include <simplemath.h>
+#include <Keyboard.h>
+#include <Mouse.h>
 
 // A basic game implementation that creates a D3D11 device and
 // provides a game loop.
@@ -16,6 +18,8 @@ class Game
 public:
 
     Game();
+
+	virtual ~Game();
 
     // Initialization and management
     void Initialize(HWND window, int width, int height);
@@ -81,4 +85,14 @@ private:
 	DirectX::SimpleMath::Vector2 m_screenPos;
 	//	スプライト原点
 	DirectX::SimpleMath::Vector2 m_origin;
+
+	//	キーボード
+	std::unique_ptr<DirectX::Keyboard> m_keyboard;
+	//	キーボードトラッカー
+	DirectX::Keyboard::KeyboardStateTracker m_keyboardtracker;
+
+	//	マウス
+	std::unique_ptr <DirectX::Mouse> m_mouse;
+	//	マウストラッカー
+	DirectX::Mouse::ButtonStateTracker m_tracker;
 };
